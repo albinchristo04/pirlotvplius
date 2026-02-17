@@ -6,6 +6,10 @@ import { generateBlogPages } from './generate-blog.js';
 import { generateSitemap, generateSearchIndex } from './generate-sitemap.js';
 import { generateOGImages } from './generate-og.js';
 import { generateIcons } from './generate-icons.js';
+import { generateFeed } from './generate-feed.js';
+import { generateH2H } from './generate-h2h.js';
+import { generateGuides } from './generate-guides.js';
+import { generatePreviews } from './generate-previews.js';
 import { copyFileSync, existsSync, readdirSync, statSync, readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -18,6 +22,16 @@ function copyDirRecursive(src, dest) {
         if (statSync(srcPath).isDirectory()) copyDirRecursive(srcPath, destPath);
         else copyFileSync(srcPath, destPath);
     }
+}
+
+function collectHTMLFiles(dir, files = []) {
+    if (!existsSync(dir)) return files;
+    for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) collectHTMLFiles(full, files);
+        else if (entry.endsWith('.html')) files.push(full);
+    }
+    return files;
 }
 
 async function main() {
@@ -48,10 +62,14 @@ async function main() {
     generateCountryPages(data);
     generateStaticPages();
     generateBlogPages();
+    generateH2H(data);
+    generateGuides(data);
+    generatePreviews(data);
 
-    // 4. Generate sitemap and search index
+    // 4. Generate sitemaps, search index + RSS feed
     generateSitemap(data);
     generateSearchIndex(data);
+    generateFeed(data);
 
     // 5. Generate OG images + PWA icons
     await generateOGImages(data);
@@ -64,31 +82,42 @@ async function main() {
         console.log('[build] ✓ IndexNow key file');
     }
 
-    // 7. Write Bing Webmaster Tools verification placeholder
+    // 7. Write Bing Webmaster Tools verification
     writeFile('BingSiteAuth.xml', '<?xml version="1.0"?>\n<users>\n\t<user>F01125A32DD0550253E1CD24EAA0B21D</user>\n</users>');
-    console.log('[build] ✓ BingSiteAuth.xml placeholder');
+    console.log('[build] ✓ BingSiteAuth.xml');
 
-    // 8. Validate JSON-LD schemas on sampled pages
-    const samplePages = ['index.html'];
-    const matchDirs = readdirSync(DIST).filter(d => d.startsWith('ver-') && statSync(join(DIST, d)).isDirectory());
-    if (matchDirs.length > 0) samplePages.push(join(matchDirs[0], 'index.html'));
-    if (existsSync(join(DIST, 'tarjeta-roja', 'index.html'))) samplePages.push(join('tarjeta-roja', 'index.html'));
-
+    // 8. Validate JSON-LD schemas on ALL generated pages
+    const allPages = collectHTMLFiles(DIST);
     let schemaErrors = 0;
-    for (const page of samplePages) {
-        const filePath = join(DIST, page);
-        if (!existsSync(filePath)) continue;
+    let schemaCount = 0;
+    for (const filePath of allPages) {
+        const relPath = filePath.replace(DIST, '').replace(/\\/g, '/');
         const html = readFileSync(filePath, 'utf-8');
         const blocks = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g);
-        if (!blocks) { console.warn(`[schema] ⚠ No JSON-LD found in ${page}`); continue; }
+        if (!blocks) continue;
         for (const block of blocks) {
             const json = block.replace(/<\/?script[^>]*>/g, '');
             try {
                 const parsed = JSON.parse(json);
                 const types = Array.isArray(parsed) ? parsed.map(p => p['@type']) : [parsed['@type']];
-                console.log(`[schema] ✓ ${page}: ${types.join(', ')}`);
+                schemaCount++;
+                // Required field checks
+                if (!Array.isArray(parsed)) {
+                    if (parsed['@type'] === 'SportsEvent' && !parsed.startDate) {
+                        console.error(`[schema] ❌ Missing startDate in SportsEvent: ${relPath}`);
+                        schemaErrors++;
+                    }
+                    if (parsed['@type'] === 'FAQPage' && !parsed.mainEntity?.length) {
+                        console.error(`[schema] ❌ Empty FAQPage: ${relPath}`);
+                        schemaErrors++;
+                    }
+                    if (parsed['@type'] === 'BreadcrumbList' && !parsed.itemListElement?.length) {
+                        console.error(`[schema] ❌ Empty BreadcrumbList: ${relPath}`);
+                        schemaErrors++;
+                    }
+                }
             } catch (err) {
-                console.error(`[schema] ❌ Invalid JSON-LD in ${page}: ${err.message}`);
+                console.error(`[schema] ❌ Invalid JSON-LD in ${relPath}: ${err.message}`);
                 schemaErrors++;
             }
         }
@@ -97,7 +126,7 @@ async function main() {
         console.error(`[build] ❌ ${schemaErrors} schema validation errors!`);
         process.exit(1);
     }
-    console.log('[build] ✓ Schema validation passed');
+    console.log(`[build] ✓ Schema validation passed (${schemaCount} schemas across ${allPages.length} pages)`);
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(2);
     console.log(`\n[build] ✅ Build complete in ${elapsed}s`);

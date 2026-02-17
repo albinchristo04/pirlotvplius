@@ -54,6 +54,16 @@ function formatTime(hourStr) {
     return hourStr ? hourStr.substring(0, 5) : '00:00';
 }
 
+// --- Emoji CTR for title tags (A4) ---
+function getMatchTitleEmoji(matchDatetime) {
+    const now = new Date();
+    const start = new Date(matchDatetime);
+    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    if (now >= start && now <= end) return '🔴';
+    if (now < start) return '▶';
+    return '📺';
+}
+
 // --- CSS Loading ---
 const mainCSS = readSrc('styles/main.css');
 const componentsCSS = readSrc('styles/components.css');
@@ -94,6 +104,15 @@ ${hreflangTags || ''}
 <link rel="dns-prefetch" href="https://tvtvhd.com">
 ${criticalCSS}
 ${schemas ? renderSchemas(schemas) : ''}
+<link rel="alternate" type="application/rss+xml" title="Velcuri — Fútbol en Vivo" href="${SITE_URL}/feed.xml">
+<!-- Microsoft Clarity -->
+<script type="text/javascript">
+  (function(c,l,a,r,i,t,y){
+    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+  })(window, document, "clarity", "script", "vipqlnktf1");
+</script>
 </head>`;
 }
 
@@ -252,10 +271,19 @@ function generateMatchPage(match, data) {
     const faqHTML = matchFaqs.map(f => `<div class="faq__item"><button class="faq__question" onclick="this.parentElement.classList.toggle('active')">${f.q}</button><div class="faq__answer"><p>${f.a}</p></div></div>`).join('\n');
 
     const schemas = [sportsEventSchema(match), broadcastEventSchema(match), faqSchema(matchFaqs), breadcrumbSchema([{ name: 'Inicio', url: '/' }, { name: match.league, url: `/liga/${match.leagueSlug}/` }, { name: match.title }])];
-    const title = `${match.homeTeam} vs ${match.awayTeam} EN VIVO GRATIS | ${match.league} | ${formatDate(match.startDate)} — Velcuri`;
-    const desc = `Ver ${match.homeTeam} vs ${match.awayTeam} en vivo gratis hoy ${formatDate(match.startDate)}. ${match.league} en directo sin suscripción. Canales: ${channels.slice(0, 3).map(c => c.name).join(', ')}.`;
+    const emoji = getMatchTitleEmoji(match.startDate);
+    const title = `${emoji} ${match.homeTeam} vs ${match.awayTeam} EN VIVO GRATIS | ${match.league} — Velcuri`;
+    const desc = `Ver ${match.homeTeam} vs ${match.awayTeam} gratis hoy ${formatDate(match.startDate)}. Canales: ${channels.slice(0, 3).map(c => c.name).join(', ')}. Transmisión HD en directo sin registro — ${match.league}.`;
+    const ogTitle = `${match.homeTeam} vs ${match.awayTeam} EN VIVO GRATIS | ${match.league} — Velcuri`;
 
-    const head = htmlHead({ title, description: desc, keywords: `${match.homeTeam}, ${match.awayTeam}, ${match.league}, en vivo, gratis`, canonical: `/${match.slug}/`, ogImage: `/og/${match.slug}.png`, schemas });
+    // C6: rel=next/prev for same-team matches
+    const siblings = data.events.filter(m => m.homeTeam === match.homeTeam && m.awayTeam === match.awayTeam).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+    const idx = siblings.findIndex(m => m.slug === match.slug);
+    const prevMatch = siblings[idx - 1] || null;
+    const nextMatch = siblings[idx + 1] || null;
+    const paginationLinks = [prevMatch ? `<link rel="prev" href="${SITE_URL}/${prevMatch.slug}/">` : '', nextMatch ? `<link rel="next" href="${SITE_URL}/${nextMatch.slug}/">` : ''].filter(Boolean).join('\n');
+
+    const head = htmlHead({ title, description: desc, keywords: `${match.homeTeam}, ${match.awayTeam}, ${match.league}, en vivo, gratis`, canonical: `/${match.slug}/`, ogImage: `/og/${match.slug}.png`, schemas, hreflangTags: paginationLinks });
 
     const body = `<body>${navHTML()}<main class="container">
 <ol class="breadcrumb"><li><a href="/">Inicio</a></li><li><a href="/liga/${match.leagueSlug}/">${match.league}</a></li><li>${match.title}</li></ol>
@@ -277,6 +305,14 @@ function generateMatchPage(match, data) {
 <div id="player-tabs" class="player-tabs" style="display:none"></div>
 <div id="player-frame" class="player-frame" style="display:none"></div>
 </div>
+<noscript>
+<div class="content-block"><p>Canales disponibles para este partido:</p><ul>
+${channels.map(c => `<li>${c.name}</li>`).join('\n')}
+</ul></div>
+</noscript>
+<noscript>
+<p class="match-meta">El partido comienza el <strong>${formatDate(match.startDate)} a las ${formatTime(match.hour)} UTC</strong>.</p>
+</noscript>
 <section class="content-block match-context"><h2>Sobre la ${leagueName}</h2>${leagueBlock}</section>
 ${relatedToday.length ? `<section class="section"><h2 class="section__title">Otros partidos hoy</h2><div class="grid grid--2">${relatedToday.map(matchCardHTML).join('')}</div></section>` : ''}
 ${relatedSameLeague.length ? `<section class="section"><h2 class="section__title">Más partidos de ${match.league}</h2><div class="grid grid--2">${relatedSameLeague.map(matchCardHTML).join('')}</div></section>` : ''}
