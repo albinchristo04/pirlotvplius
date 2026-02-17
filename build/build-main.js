@@ -65,7 +65,7 @@ async function main() {
     }
 
     // 7. Write Bing Webmaster Tools verification placeholder
-    writeFile('BingSiteAuth.xml', '<?xml version="1.0"?>\n<users>\n  <user><!-- Replace with Bing verification code --></user>\n</users>');
+    writeFile('BingSiteAuth.xml', '<?xml version="1.0"?>\n<users>\n\t<user>F01125A32DD0550253E1CD24EAA0B21D</user>\n</users>');
     console.log('[build] ✓ BingSiteAuth.xml placeholder');
 
     // 8. Validate JSON-LD schemas on sampled pages
