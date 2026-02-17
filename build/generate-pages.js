@@ -29,7 +29,7 @@ function generateHubContent(hub) {
 
 export function generateHubPages(data) {
     const topMatches = getTopMatchesForBuild(data.events, 10);
-    const matchCards = topMatches.map(m => `<a href="/${m.slug}/" style="text-decoration:none">${matchCardHTML(m)}</a>`).join('\n');
+    const matchCards = topMatches.map(m => `<a href="/${m.slug}/" class="no-underline">${matchCardHTML(m)}</a>`).join('\n');
 
     for (const hub of HUB_PAGES) {
         const hubFaqs = [
@@ -54,7 +54,7 @@ export function generateHubPages(data) {
 <section class="hub-top-matches"><h2>Los 10 Partidos Más Importantes Hoy</h2>
 <p>Haz clic en cualquier partido para ver la transmisión en vivo gratis:</p>
 <div class="grid grid--3">${matchCards}</div></section>
-<section style="margin:2rem 0;display:flex;gap:1rem;flex-wrap:wrap">${linksHTML}</section>
+<section class="cta-center" style="display:flex;gap:1rem;flex-wrap:wrap">${linksHTML}</section>
 <section class="section faq"><h2 class="section__title">Preguntas Frecuentes</h2>${faqHTML}</section>
 </main>${footerHTML()}`;
         writePage(hub.slug, head + body);
@@ -78,9 +78,9 @@ export function generateLeaguePages(data) {
         const head = htmlHead({ title, description: desc, keywords: `${league.name}, en vivo, gratis, partidos`, canonical: `/liga/${slug}/`, schemas });
         const body = `<body>${navHTML()}<main class="container">
 <ol class="breadcrumb"><li><a href="/">Inicio</a></li><li><a href="/">Ligas</a></li><li>${league.name}</li></ol>
-<h1>${league.name} <span style="color:var(--color-accent)">EN VIVO GRATIS</span></h1>
+<h1>${league.name} <span class="text-accent">EN VIVO GRATIS</span></h1>
 <section class="content-block">${leagueBlock}</section>
-${league.events.length ? `<section class="section"><h2 class="section__title">Partidos de ${league.name}</h2><div class="grid grid--3">${matchCards}</div></section>` : '<p style="color:var(--color-text-muted);margin:2rem 0">No hay partidos programados actualmente para esta liga.</p>'}
+${league.events.length ? `<section class="section"><h2 class="section__title">Partidos de ${league.name}</h2><div class="grid grid--3">${matchCards}</div></section>` : '<p class="text-muted" style="margin:2rem 0">No hay partidos programados actualmente para esta liga.</p>'}
 </main>${footerHTML()}`;
         writePage(`liga/${slug}`, head + body);
         count++;
@@ -117,11 +117,11 @@ export function generateChannelPages(data) {
         const head = htmlHead({ title, description: desc, keywords: `${channel.name}, en vivo, gratis, ver`, canonical: `/canal/${slug}/`, schemas });
         const body = `<body>${navHTML()}<main class="container">
 <ol class="breadcrumb"><li><a href="/">Inicio</a></li><li>Canales</li><li>${channel.name}</li></ol>
-<h1>Ver ${channel.name} <span style="color:var(--color-accent)">EN VIVO GRATIS</span></h1>
+<h1>Ver ${channel.name} <span class="text-accent">EN VIVO GRATIS</span></h1>
 <section class="content-block"><p><strong>${channel.name}</strong> es uno de los canales deportivos más populares para ver fútbol en vivo. En Velcuri puedes acceder a la transmisión en directo de ${channel.name} de forma completamente gratuita, sin necesidad de suscripción ni registro. Este canal ofrece cobertura de las principales ligas y competiciones del mundo, incluyendo partidos de Champions League, ligas nacionales y torneos internacionales.</p>
 <p>La programación de <strong>${channel.name}</strong> incluye partidos en vivo, análisis pre y post partido, entrevistas exclusivas y contenido especial. En Velcuri actualizamos diariamente la programación para que siempre sepas qué partidos se transmiten por este canal y a qué hora comienzan.</p>
 <p>Para ver <strong>${channel.name} en vivo y gratis</strong>, simplemente selecciona el partido que deseas ver y elige ${channel.name} como tu canal preferido. La transmisión se cargará directamente en tu navegador, sin necesidad de descargar aplicaciones ni plugins adicionales.</p></section>
-${channel.events.length ? `<section class="section"><h2 class="section__title">Partidos en ${channel.name}</h2><div class="grid grid--3">${matchCards}</div></section>` : '<p style="color:var(--color-text-muted);margin:2rem 0">No hay partidos programados actualmente en este canal.</p>'}
+${channel.events.length ? `<section class="section"><h2 class="section__title">Partidos en ${channel.name}</h2><div class="grid grid--3">${matchCards}</div></section>` : '<p class="text-muted" style="margin:2rem 0">No hay partidos programados actualmente en este canal.</p>'}
 </main>${footerHTML()}`;
         writePage(`canal/${slug}`, head + body);
         count++;
@@ -149,8 +149,8 @@ export function generateTeamPages(data) {
         const head = htmlHead({ title, description: desc, keywords: `${team.name}, en vivo, partidos, transmisión`, canonical: `/equipo/${slug}/`, schemas });
         const body = `<body>${navHTML()}<main class="container">
 <ol class="breadcrumb"><li><a href="/">Inicio</a></li><li>Equipos</li><li>${team.name}</li></ol>
-<h1>${team.name} <span style="color:var(--color-accent)">EN VIVO</span></h1>
-${team.matches.length ? `<section class="section"><h2 class="section__title">Próximos Partidos</h2><div class="grid grid--3">${matchCards}</div></section>` : '<p style="color:var(--color-text-muted);margin:2rem 0">No hay partidos programados actualmente para este equipo.</p>'}
+<h1>${team.name} <span class="text-accent">EN VIVO</span></h1>
+${team.matches.length ? `<section class="section"><h2 class="section__title">Próximos Partidos</h2><div class="grid grid--3">${matchCards}</div></section>` : '<p class="text-muted" style="margin:2rem 0">No hay partidos programados actualmente para este equipo.</p>'}
 </main>${footerHTML()}`;
         writePage(`equipo/${slug}`, head + body);
         count++;
@@ -223,13 +223,25 @@ export function generateCountryPages(data) {
 </main>${footerHTML()}`;
         writePage(country.code, head + body);
 
-        // Country sub-pages
+        // Country sub-pages (hubs)
         for (const hub of ['partidos-de-hoy', 'futbol-en-vivo', 'rojadirecta', 'tarjeta-roja', 'pirlotv']) {
             const subHead = htmlHead({ title: `${hub.replace(/-/g, ' ')} ${country.name} — Velcuri`, description: `Ver ${hub.replace(/-/g, ' ')} desde ${country.name}.`, keywords: '', canonical: `/${country.code}/${hub}/`, schemas: [] });
             const subBody = `<body>${navHTML()}<main class="container">
 <h1>${country.flag} ${hub.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} — ${country.name}</h1>
 <div class="grid grid--3">${matchCards}</div></main>${footerHTML()}`;
             writePage(`${country.code}/${hub}`, subHead + subBody);
+        }
+
+        // Country league sub-pages (e.g., /ar/liga/champions-league/)
+        for (const leagueSlug of country.leagues) {
+            const leagueName = leagueSlug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            const leagueMatches = data.events.filter(m => m.leagueSlug === leagueSlug);
+            const leagueCards = leagueMatches.length ? leagueMatches.map(matchCardHTML).join('\n') : matchCards;
+            const leagueHead = htmlHead({ title: `${leagueName} EN VIVO ${country.name} — Velcuri`, description: `Ver ${leagueName} en vivo gratis desde ${country.name}.`, keywords: `${leagueName}, ${country.name}, en vivo`, canonical: `/${country.code}/liga/${leagueSlug}/`, schemas: [] });
+            const leagueBody = `<body>${navHTML()}<main class="container">
+<h1>${country.flag} ${leagueName} — ${country.name}</h1>
+<div class="grid grid--3">${leagueCards}</div></main>${footerHTML()}`;
+            writePage(`${country.code}/liga/${leagueSlug}`, leagueHead + leagueBody);
         }
     }
     console.log(`[build] ✓ ${COUNTRIES.length} country pages + sub-pages`);

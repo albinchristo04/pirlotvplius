@@ -6,7 +6,7 @@ import { generateBlogPages } from './generate-blog.js';
 import { generateSitemap, generateSearchIndex } from './generate-sitemap.js';
 import { generateOGImages } from './generate-og.js';
 import { generateIcons } from './generate-icons.js';
-import { copyFileSync, existsSync, readdirSync, statSync } from 'fs';
+import { copyFileSync, existsSync, readdirSync, statSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 function copyDirRecursive(src, dest) {
@@ -63,6 +63,41 @@ async function main() {
         writeFile(`${indexNowKey}.txt`, indexNowKey);
         console.log('[build] ✓ IndexNow key file');
     }
+
+    // 7. Write Bing Webmaster Tools verification placeholder
+    writeFile('BingSiteAuth.xml', '<?xml version="1.0"?>\n<users>\n  <user><!-- Replace with Bing verification code --></user>\n</users>');
+    console.log('[build] ✓ BingSiteAuth.xml placeholder');
+
+    // 8. Validate JSON-LD schemas on sampled pages
+    const samplePages = ['index.html'];
+    const matchDirs = readdirSync(DIST).filter(d => d.startsWith('ver-') && statSync(join(DIST, d)).isDirectory());
+    if (matchDirs.length > 0) samplePages.push(join(matchDirs[0], 'index.html'));
+    if (existsSync(join(DIST, 'tarjeta-roja', 'index.html'))) samplePages.push(join('tarjeta-roja', 'index.html'));
+
+    let schemaErrors = 0;
+    for (const page of samplePages) {
+        const filePath = join(DIST, page);
+        if (!existsSync(filePath)) continue;
+        const html = readFileSync(filePath, 'utf-8');
+        const blocks = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g);
+        if (!blocks) { console.warn(`[schema] ⚠ No JSON-LD found in ${page}`); continue; }
+        for (const block of blocks) {
+            const json = block.replace(/<\/?script[^>]*>/g, '');
+            try {
+                const parsed = JSON.parse(json);
+                const types = Array.isArray(parsed) ? parsed.map(p => p['@type']) : [parsed['@type']];
+                console.log(`[schema] ✓ ${page}: ${types.join(', ')}`);
+            } catch (err) {
+                console.error(`[schema] ❌ Invalid JSON-LD in ${page}: ${err.message}`);
+                schemaErrors++;
+            }
+        }
+    }
+    if (schemaErrors > 0) {
+        console.error(`[build] ❌ ${schemaErrors} schema validation errors!`);
+        process.exit(1);
+    }
+    console.log('[build] ✓ Schema validation passed');
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(2);
     console.log(`\n[build] ✅ Build complete in ${elapsed}s`);

@@ -12,27 +12,27 @@ function ensureDir(dir) { mkdirSync(dir, { recursive: true }); }
 
 // Escape XML/SVG special characters
 function esc(str) {
-    return (str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
+  return (str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 }
 
 // Truncate text to max length
 function truncate(str, max) {
-    if (!str || str.length <= max) return str || '';
-    return str.substring(0, max - 1) + '…';
+  if (!str || str.length <= max) return str || '';
+  return str.substring(0, max - 1) + '…';
 }
 
 function createMatchSVG(homeTeam, awayTeam, league, date) {
-    const home = esc(truncate(homeTeam, 22));
-    const away = esc(truncate(awayTeam, 22));
-    const leagueName = esc(truncate(league, 40));
-    const dateStr = esc(date || '');
+  const home = esc(truncate(homeTeam, 22));
+  const away = esc(truncate(awayTeam, 22));
+  const leagueName = esc(truncate(league, 40));
+  const dateStr = esc(date || '');
 
-    return `<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  return `<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#0d0d1a;stop-opacity:1"/>
@@ -65,10 +65,10 @@ function createMatchSVG(homeTeam, awayTeam, league, date) {
 }
 
 function createHubSVG(title, subtitle) {
-    const t = esc(truncate(title, 35));
-    const s = esc(truncate(subtitle || 'Fútbol en Vivo Gratis', 50));
+  const t = esc(truncate(title, 35));
+  const s = esc(truncate(subtitle || 'Fútbol en Vivo Gratis', 50));
 
-    return `<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  return `<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#0d0d1a;stop-opacity:1"/>
@@ -90,52 +90,89 @@ function createHubSVG(title, subtitle) {
 }
 
 async function svgToPng(svg, outputPath) {
-    await sharp(Buffer.from(svg))
-        .resize(1200, 630)
-        .png({ quality: 85, compressionLevel: 9 })
-        .toFile(outputPath);
+  await sharp(Buffer.from(svg))
+    .resize(1200, 630)
+    .png({ quality: 85, compressionLevel: 9 })
+    .toFile(outputPath);
 }
 
 export async function generateOGImages(data) {
-    ensureDir(OG_DIR);
-    let count = 0;
+  ensureDir(OG_DIR);
+  let count = 0;
 
-    // Homepage OG
+  // Homepage OG
+  await svgToPng(
+    createHubSVG('Velcuri', 'Fútbol en Vivo Gratis — Partidos de Hoy'),
+    join(OG_DIR, 'home.png')
+  );
+  count++;
+
+  // Hub page OGs
+  const hubs = [
+    { slug: 'tarjeta-roja', title: 'Tarjeta Roja', sub: 'Ver Fútbol EN VIVO GRATIS' },
+    { slug: 'rojadirecta', title: 'Rojadirecta', sub: 'Alternativa — Fútbol Gratis' },
+    { slug: 'pirlotv', title: 'Pirlotv', sub: 'Fútbol en Vivo Gratis Online' },
+    { slug: 'partidos-de-hoy', title: 'Partidos de Hoy', sub: 'Todos los Partidos EN VIVO' },
+    { slug: 'partidos-en-vivo', title: 'Partidos en Vivo', sub: 'Ahora Mismo GRATIS' },
+    { slug: 'futbol-en-vivo', title: 'Fútbol en Vivo', sub: 'Ver Partidos Gratis Hoy' },
+    { slug: 'futbol-gratis', title: 'Fútbol Gratis', sub: 'Sin Registro Sin Suscripción' },
+    { slug: 'ver-futbol-online', title: 'Ver Fútbol Online', sub: 'HD Gratis Sin Cortes' },
+    { slug: 'futbol-para-todos', title: 'Fútbol Para Todos', sub: 'EN VIVO Gratis' },
+  ];
+  for (const hub of hubs) {
     await svgToPng(
-        createHubSVG('Velcuri', 'Fútbol en Vivo Gratis — Partidos de Hoy'),
-        join(OG_DIR, 'home.png')
+      createHubSVG(hub.title, hub.sub),
+      join(OG_DIR, `${hub.slug}.png`)
     );
     count++;
+  }
 
-    // Hub page OGs
-    const hubs = [
-        { slug: 'tarjeta-roja', title: 'Tarjeta Roja', sub: 'Ver Fútbol EN VIVO GRATIS' },
-        { slug: 'rojadirecta', title: 'Rojadirecta', sub: 'Alternativa — Fútbol Gratis' },
-        { slug: 'pirlotv', title: 'Pirlotv', sub: 'Fútbol en Vivo Gratis Online' },
-        { slug: 'partidos-de-hoy', title: 'Partidos de Hoy', sub: 'Todos los Partidos EN VIVO' },
-        { slug: 'partidos-en-vivo', title: 'Partidos en Vivo', sub: 'Ahora Mismo GRATIS' },
-        { slug: 'futbol-en-vivo', title: 'Fútbol en Vivo', sub: 'Ver Partidos Gratis Hoy' },
-        { slug: 'futbol-gratis', title: 'Fútbol Gratis', sub: 'Sin Registro Sin Suscripción' },
-        { slug: 'ver-futbol-online', title: 'Ver Fútbol Online', sub: 'HD Gratis Sin Cortes' },
-        { slug: 'futbol-para-todos', title: 'Fútbol Para Todos', sub: 'EN VIVO Gratis' },
-    ];
-    for (const hub of hubs) {
-        await svgToPng(
-            createHubSVG(hub.title, hub.sub),
-            join(OG_DIR, `${hub.slug}.png`)
-        );
-        count++;
-    }
+  // Match page OGs
+  for (const match of data.events) {
+    const dateStr = match.date || '';
+    await svgToPng(
+      createMatchSVG(match.homeTeam, match.awayTeam, match.league, dateStr),
+      join(OG_DIR, `${match.slug}.png`)
+    );
+    count++;
+  }
 
-    // Match page OGs
-    for (const match of data.events) {
-        const dateStr = match.date || '';
-        await svgToPng(
-            createMatchSVG(match.homeTeam, match.awayTeam, match.league, dateStr),
-            join(OG_DIR, `${match.slug}.png`)
-        );
-        count++;
-    }
+  // League page OGs
+  for (const [slug, league] of Object.entries(data.leagues)) {
+    await svgToPng(
+      createHubSVG(league.name, `${league.matchCount} Partidos EN VIVO`),
+      join(OG_DIR, `liga-${slug}.png`)
+    );
+    count++;
+  }
 
-    console.log(`[build] ✓ ${count} OG images generated`);
+  // Channel page OGs
+  for (const [slug, channel] of Object.entries(data.channels)) {
+    await svgToPng(
+      createHubSVG(channel.name, 'Canal EN VIVO Gratis — Velcuri'),
+      join(OG_DIR, `canal-${slug}.png`)
+    );
+    count++;
+  }
+
+  // Team page OGs
+  for (const [slug, team] of Object.entries(data.teams)) {
+    await svgToPng(
+      createHubSVG(team.name, 'Partidos EN VIVO Gratis'),
+      join(OG_DIR, `equipo-${slug}.png`)
+    );
+    count++;
+  }
+
+  // Country page OGs
+  const countryNames = { ar: 'Argentina', mx: 'México', es: 'España', co: 'Colombia', pe: 'Perú' };
+  for (const [code, name] of Object.entries(countryNames)) {
+    await svgToPng(
+      createHubSVG(`Fútbol en ${name}`, 'Partidos EN VIVO Gratis'),
+      join(OG_DIR, `pais-${code}.png`)
+    );
+    count++;
+  }
+
+  console.log(`[build] ✓ ${count} OG images generated`);
 }
