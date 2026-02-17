@@ -1,0 +1,29 @@
+name: Ping Search Engines
+on:
+  workflow_run:
+    workflows: ['Build & Deploy']
+    types: [completed]
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Ping Google Sitemap
+        run: curl -s "https://www.google.com/ping?sitemap=https://www.velcuri.io/sitemap.xml"
+
+      - name: Ping Bing via IndexNow
+        run: |
+          curl -s -X POST "https://api.indexnow.org/indexnow" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "host": "www.velcuri.io",
+              "key": "${{ secrets.INDEXNOW_KEY }}",
+              "urlList": [
+                "https://www.velcuri.io/",
+                "https://www.velcuri.io/partidos-de-hoy/",
+                "https://www.velcuri.io/partidos-en-vivo/",
+                "https://www.velcuri.io/tarjeta-roja/",
+                "https://www.velcuri.io/rojadirecta/"
+              ]
+            }'

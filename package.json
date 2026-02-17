@@ -1,0 +1,19 @@
+{
+    "name": "velcuri-io",
+    "version": "1.0.0",
+    "description": "Velcuri.io — Spanish-language sports streaming SEO directory",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "node build/build-main.js",
+        "build:local": "node build/build-main.js --local",
+        "dev": "node build/build-main.js --local --watch",
+        "fetch": "node src/data/fetch.js"
+    },
+    "dependencies": {
+        "sharp": "^0.33.2"
+    },
+    "engines": {
+        "node": ">=20.0.0"
+    }
+}

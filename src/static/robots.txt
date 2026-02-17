@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+Sitemap: https://www.velcuri.io/sitemap.xml
+
+# Block internal/utility paths
+Disallow: /admin/
+Disallow: /.github/
+Disallow: /dist/

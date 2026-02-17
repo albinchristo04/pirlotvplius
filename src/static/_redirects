@@ -1,0 +1,16 @@
+# Enforce www
+https://velcuri.io/* https://www.velcuri.io/:splat 301!
+
+# Common misspellings and competitor brand redirects
+/tarjetaroja/ /tarjeta-roja/ 301
+/roja-directa/ /rojadirecta/ 301
+/pirlo-tv/ /pirlotv/ 301
+/rojadirectatv/ /rojadirecta/ 301
+
+# Legacy URL patterns
+/partido/:slug /partidos-de-hoy/ 302
+/evento/:id / 302
+/event/:id / 302
+
+# 404 fallback
+/* /404.html 404
